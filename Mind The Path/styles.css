@@ -674,6 +674,29 @@ body::before {
     font-size: 1.1rem;
 }
 
+.hint-display {
+    margin: calc(var(--spacing-lg) * -0.3) auto var(--spacing-xl);
+    max-width: 900px;
+    min-height: 52px;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: rgba(0, 212, 255, 0.08);
+    border: 1px solid var(--accent-tertiary);
+    color: var(--accent-tertiary);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    letter-spacing: 1px;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
+}
+
+.hint-display.active {
+    background: rgba(255, 180, 0, 0.12);
+    border-color: #ffb400;
+    color: #ffcf66;
+    box-shadow: 0 0 18px rgba(255, 180, 0, 0.2);
+}
+
 /* 消息提示 */
 .message {
     position: fixed;

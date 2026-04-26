@@ -881,6 +881,7 @@ const elements = {
     overlay: document.getElementById('overlay'),
     overlayTitle: document.getElementById('overlay-title'),
     overlayDesc: document.getElementById('overlay-desc'),
+    hintDisplay: document.getElementById('hint-display'),
     message: document.getElementById('message'),
     academicContent: document.getElementById('academic-content')
 };
@@ -1027,6 +1028,12 @@ function loadLevel() {
     
     // 更新学术说明
     updateAcademicContent(sentence);
+
+    // 重置提示面板
+    if (elements.hintDisplay) {
+        elements.hintDisplay.textContent = 'HINT READY';
+        elements.hintDisplay.classList.remove('active');
+    }
     
     // 更新按钮状态
     updateButtonStates();
@@ -1463,21 +1470,41 @@ function showHint() {
     const sentence = gameState.currentSentence;
     let hintText = '';
     
-    if (sentence.isGardenPath) {
-        hintText = `💡 提示：${sentence.trapExplanation}`;
-    } else {
-        // 显示下一个应该放置的单词
-        const placedIndices = gameState.placedWords.map(pw => pw.wordIndex);
-        const nextIndex = placedIndices.length;
+    // 计算“第一个尚未放置”的单词索引，避免用长度推断导致提示不准确
+    const placedSet = new Set(gameState.placedWords.map(pw => pw.wordIndex));
+    const nextIndex = sentence.words.findIndex((_, index) => !placedSet.has(index));
+    
+    if (nextIndex !== -1) {
+        const nextWord = sentence.words[nextIndex];
         
-        if (nextIndex < sentence.words.length) {
-            hintText = `💡 下一个单词 "${sentence.words[nextIndex]}" 应该放在哪个槽位？`;
-        } else {
-            hintText = '💡 所有单词都已放置，点击确认解析！';
+        // 从句法结构中推断该词可能所属的槽位类型
+        const candidateSlotTypes = [];
+        for (const [slotKey, slotInfo] of Object.entries(sentence.structure)) {
+            if (Array.isArray(slotInfo.words) && slotInfo.words.includes(nextIndex)) {
+                candidateSlotTypes.push(slotInfo.type || slotKey);
+            }
         }
+        
+        const uniqueSlotTypes = [...new Set(candidateSlotTypes)];
+        const slotHint = uniqueSlotTypes.length > 0
+            ? `（建议槽位：${uniqueSlotTypes.join(' / ')}）`
+            : '';
+        
+        hintText = `💡 下一个单词 "${nextWord}" ${slotHint}`;
+        
+        // 花园路径句追加陷阱提醒（但不覆盖“下一个词”信息）
+        if (sentence.isGardenPath && sentence.trapExplanation) {
+            hintText += ` ｜ ⚠️ ${sentence.trapExplanation}`;
+        }
+    } else {
+        hintText = '💡 所有单词都已放置，点击确认解析！';
     }
     
     showMessage(hintText, 'warning');
+    if (elements.hintDisplay) {
+        elements.hintDisplay.textContent = hintText;
+        elements.hintDisplay.classList.add('active');
+    }
     
     // 扣除少量时间作为提示代价
     gameState.timeRemaining = Math.max(0, gameState.timeRemaining - 2);
@@ -1781,22 +1808,57 @@ function updateUI() {
 }
 
 // 显示消息
+let messageClearTimer = null;
+
 function showMessage(text, type = 'info') {
+    // 清理上一条消息的清除定时器，避免旧定时器误清空新消息
+    if (messageClearTimer) {
+        clearTimeout(messageClearTimer);
+        messageClearTimer = null;
+    }
+
     // 先重置消息元素
     elements.message.textContent = '';
     elements.message.className = 'message';
+    elements.message.style.cssText = '';
     
     // 强制触发重绘
     void elements.message.offsetWidth;
     
-    // 设置新消息（使用 message-type 格式）
+    // 设置新消息（与 CSS 的 `.message.warning` 命名保持一致）
     elements.message.textContent = text;
-    elements.message.className = `message message-${type}`;
+    elements.message.className = `message ${type}`;
+    
+    // 兜底内联样式：避免类名/层级冲突导致消息看不见
+    elements.message.style.display = 'block';
+    elements.message.style.opacity = '1';
+    elements.message.style.zIndex = '3000';
+    elements.message.style.pointerEvents = 'none';
+    
+    if (type === 'success') {
+        elements.message.style.background = 'rgba(0, 255, 136, 0.2)';
+        elements.message.style.border = '1px solid #00ff88';
+        elements.message.style.color = '#00ff88';
+    } else if (type === 'error') {
+        elements.message.style.background = 'rgba(255, 51, 102, 0.2)';
+        elements.message.style.border = '1px solid #ff3366';
+        elements.message.style.color = '#ff3366';
+    } else if (type === 'warning') {
+        elements.message.style.background = 'rgba(255, 180, 0, 0.2)';
+        elements.message.style.border = '1px solid #ffb400';
+        elements.message.style.color = '#ffb400';
+    } else {
+        elements.message.style.background = 'rgba(0, 212, 255, 0.2)';
+        elements.message.style.border = '1px solid #00d4ff';
+        elements.message.style.color = '#00d4ff';
+    }
     
     // 3.5秒后清除消息（等待动画完成）
-    setTimeout(() => {
+    messageClearTimer = setTimeout(() => {
         elements.message.textContent = '';
         elements.message.className = 'message';
+        elements.message.style.cssText = '';
+        messageClearTimer = null;
     }, 3500);
 }
 
