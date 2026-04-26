@@ -1,9 +1,0 @@
-{
-  "name": "mind-the-path",
-  "version": "1.0.0",
-  "description": "Syntax Puzzle: Mind the Path - A garden path sentence game",
-  "scripts": {
-    "build": "cp index.html dist/index.html && cp styles.css dist/styles.css && cp game.js dist/game.js",
-    "dev": "python -m http.server 8080"
-  }
-}
