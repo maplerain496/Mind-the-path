@@ -1,0 +1,8 @@
+{
+  "name": "mind-the-path",
+  "version": "1.0.0",
+  "description": "Syntax Puzzle: Mind the Path",
+  "scripts": {
+    "build": "mkdir -p dist && cp index.html dist/ && cp styles.css dist/ && cp game.js dist/"
+  }
+}
